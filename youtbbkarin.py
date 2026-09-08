@@ -2,6 +2,7 @@ import sys
 import subprocess
 import threading
 import os
+import shutil
 import time
 import urllib.request
 import urllib.parse
@@ -30,7 +31,14 @@ PROCESS_LOCK = threading.Lock()
 
 
 def get_ffmpeg_binary() -> str:
-    """Return a working FFmpeg binary without relying on packages.txt/apt."""
+    """Cari binary FFmpeg yang bisa dipakai, dengan beberapa lapis fallback."""
+    # 1) FFmpeg sistem hasil instalasi apt via packages.txt (paling andal di
+    #    Streamlit Cloud, karena tidak butuh download saat runtime).
+    system_ffmpeg = shutil.which("ffmpeg")
+    if system_ffmpeg:
+        return system_ffmpeg
+
+    # 2) Binary yang disediakan/didownload oleh paket imageio-ffmpeg.
     if imageio_ffmpeg is not None:
         try:
             path = imageio_ffmpeg.get_ffmpeg_exe()
@@ -39,7 +47,7 @@ def get_ffmpeg_binary() -> str:
         except Exception:
             pass
 
-    # Fallback for local Windows/Linux installations.
+    # 3) Fallback terakhir: berharap "ffmpeg" ada di PATH (instalasi lokal).
     return "ffmpeg"
 
 
